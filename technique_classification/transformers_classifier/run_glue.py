@@ -27,6 +27,7 @@ import json
 from nltk.tokenize import word_tokenize
 from nltk.stem import PorterStemmer
 
+
 import numpy as np
 import pickle
 import torch
@@ -42,19 +43,19 @@ except:
 from tqdm import tqdm, trange
 
 from transformers import (WEIGHTS_NAME, BertConfig,
-                          BertForSequenceClassification, BertTokenizer,
-                          RobertaConfig,
-                          RobertaTokenizer,
-                          XLMConfig, XLMForSequenceClassification,
-                          XLMTokenizer, XLNetConfig,
-                          XLNetTokenizer,
-                          DistilBertConfig,
-                          DistilBertForSequenceClassification,
-                          DistilBertTokenizer,
-                          AlbertConfig,
-                          AlbertForSequenceClassification,
-                          AlbertTokenizer,
-                          )
+                                  BertForSequenceClassification, BertTokenizer,
+                                  RobertaConfig,
+                                  RobertaTokenizer,
+                                  XLMConfig, XLMForSequenceClassification,
+                                  XLMTokenizer, XLNetConfig,
+                                  XLNetTokenizer,
+                                  DistilBertConfig,
+                                  DistilBertForSequenceClassification,
+                                  DistilBertTokenizer,
+                                  AlbertConfig,
+                                  AlbertForSequenceClassification, 
+                                  AlbertTokenizer,
+                                )
 
 from .modeling_roberta import RobertaForSequenceClassification
 from .modeling_xlnet import XLNetForSequenceClassification
@@ -68,7 +69,7 @@ from transformers import glue_convert_examples_to_features as convert_examples_t
 
 logger = logging.getLogger(__name__)
 
-ALL_MODELS = sum((tuple(conf.pretrained_config_archive_map.keys()) for conf in (BertConfig, XLNetConfig, XLMConfig,
+ALL_MODELS = sum((tuple(conf.pretrained_config_archive_map.keys()) for conf in (BertConfig, XLNetConfig, XLMConfig, 
                                                                                 RobertaConfig, DistilBertConfig)), ())
 
 MODEL_CLASSES = {
@@ -107,14 +108,12 @@ def train(args, train_dataset, model, tokenizer):
     # Prepare optimizer and schedule (linear warmup and decay)
     no_decay = ['bias', 'LayerNorm.weight']
     optimizer_grouped_parameters = [
-        {'params': [p for n, p in model.named_parameters() if not any(nd in n for nd in no_decay)],
-         'weight_decay': args.weight_decay},
+        {'params': [p for n, p in model.named_parameters() if not any(nd in n for nd in no_decay)], 'weight_decay': args.weight_decay},
         {'params': [p for n, p in model.named_parameters() if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
-    ]
+        ]
 
     optimizer = AdamW(optimizer_grouped_parameters, lr=args.learning_rate, eps=args.adam_epsilon)
-    scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=args.warmup_steps,
-                                                num_training_steps=t_total)
+    scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=args.warmup_steps, num_training_steps=t_total)
     if args.fp16:
         try:
             from apex import amp
@@ -138,8 +137,7 @@ def train(args, train_dataset, model, tokenizer):
     logger.info("  Num Epochs = %d", args.num_train_epochs)
     logger.info("  Instantaneous batch size per GPU = %d", args.per_gpu_train_batch_size)
     logger.info("  Total train batch size (w. parallel, distributed & accumulation) = %d",
-                args.train_batch_size * args.gradient_accumulation_steps * (
-                    torch.distributed.get_world_size() if args.local_rank != -1 else 1))
+                   args.train_batch_size * args.gradient_accumulation_steps * (torch.distributed.get_world_size() if args.local_rank != -1 else 1))
     logger.info("  Gradient Accumulation steps = %d", args.gradient_accumulation_steps)
     logger.info("  Total optimization steps = %d", t_total)
 
@@ -149,21 +147,18 @@ def train(args, train_dataset, model, tokenizer):
     train_iterator = trange(int(args.num_train_epochs), desc="Epoch", disable=args.local_rank not in [-1, 0])
     set_seed(args)  # Added here for reproductibility (even between python 2 and 3)
     for _ in train_iterator:
-        epoch_iterator = tqdm(train_dataloader, desc="Iteration", disable=args.local_rank not in [-1, 0], position=0,
-                              leave=True)
+        epoch_iterator = tqdm(train_dataloader, desc="Iteration", disable=args.local_rank not in [-1, 0], position=0, leave=True)
         for step, batch in enumerate(epoch_iterator):
             model.train()
             batch = tuple(t.to(args.device) for t in batch)
-            inputs = {'input_ids': batch[0],
+            inputs = {'input_ids':      batch[0],
                       'attention_mask': batch[1],
-                      'labels': batch[3]}
+                      'labels':         batch[3]}
             if args.model_type != 'distilbert':
-                inputs['token_type_ids'] = batch[2] if args.model_type in ['bert',
-                                                                           'xlnet'] else None  # XLM, DistilBERT and RoBERTa don't use segment_ids
+                inputs['token_type_ids'] = batch[2] if args.model_type in ['bert', 'xlnet'] else None  # XLM, DistilBERT and RoBERTa don't use segment_ids
             if args.use_length:
                 if args.model_type == 'roberta':
-                    inputs['lengths'] = (inputs['attention_mask'] - inputs['token_type_ids']).sum(dim=1,
-                                                                                                  keepdim=True).float()
+                    inputs['lengths'] = (inputs['attention_mask'] - inputs['token_type_ids']).sum(dim=1, keepdim=True).float()
                 if args.model_type == 'xlnet':
                     mask = inputs['attention_mask'] - inputs['token_type_ids']
                     mask[mask < 0] = 0
@@ -181,7 +176,7 @@ def train(args, train_dataset, model, tokenizer):
             loss = outputs[0]  # model outputs are always tuple in transformers (see doc)
 
             if args.n_gpu > 1:
-                loss = loss.mean()  # mean() to average on multi-gpu parallel training
+                loss = loss.mean() # mean() to average on multi-gpu parallel training
             if args.gradient_accumulation_steps > 1:
                 loss = loss / args.gradient_accumulation_steps
 
@@ -226,8 +221,7 @@ def train(args, train_dataset, model, tokenizer):
                     output_dir = os.path.join(args.output_dir, 'checkpoint-{}'.format(global_step))
                     if not os.path.exists(output_dir):
                         os.makedirs(output_dir)
-                    model_to_save = model.module if hasattr(model,
-                                                            'module') else model  # Take care of distributed/parallel training
+                    model_to_save = model.module if hasattr(model, 'module') else model  # Take care of distributed/parallel training
                     model_to_save.save_pretrained(output_dir)
                     torch.save(args, os.path.join(output_dir, 'training_args.bin'))
                     logger.info("Saving model checkpoint to %s", output_dir)
@@ -283,12 +277,11 @@ def evaluate(args, model, tokenizer, prefix=""):
             batch = tuple(t.to(args.device) for t in batch)
 
             with torch.no_grad():
-                inputs = {'input_ids': batch[0],
+                inputs = {'input_ids':      batch[0],
                           'attention_mask': batch[1],
-                          'labels': batch[3]}
+                          'labels':         batch[3]}
                 if args.model_type != 'distilbert':
-                    inputs['token_type_ids'] = batch[2] if args.model_type in ['bert',
-                                                                               'xlnet'] else None  # XLM, DistilBERT and RoBERTa don't use segment_ids
+                    inputs['token_type_ids'] = batch[2] if args.model_type in ['bert', 'xlnet'] else None  # XLM, DistilBERT and RoBERTa don't use segment_ids
                 if args.use_length:
                     if args.model_type == 'roberta':
                         inputs['lengths'] = (batch[1] - batch[2]).sum(dim=1, keepdim=True).float()
@@ -318,7 +311,7 @@ def evaluate(args, model, tokenizer, prefix=""):
                 out_label_ids = np.append(out_label_ids, inputs['labels'].detach().cpu().numpy(), axis=0)
 
         eval_loss = eval_loss / nb_eval_steps
-
+        
         if args.do_predict:
             try:
                 with open(os.path.join(eval_output_dir, prefix, 'predicted_logits'), 'wb') as f:
@@ -326,15 +319,15 @@ def evaluate(args, model, tokenizer, prefix=""):
             except:
                 with open(os.path.join(eval_output_dir, 'predicted_logits'), 'wb') as f:
                     pickle.dump(preds, f)
-
+        
         if args.output_mode == "classification":
             preds = np.argmax(preds, axis=1)
         elif args.output_mode == "regression":
             preds = np.squeeze(preds)
-
+        
         result = compute_metrics(eval_task, preds, out_label_ids)
         results.update(result)
-
+        
         try:
             if args.do_predict:
                 with open(os.path.join(eval_output_dir, prefix, 'predictions'), 'wb') as f:
@@ -345,7 +338,7 @@ def evaluate(args, model, tokenizer, prefix=""):
                 with open(os.path.join(eval_output_dir, 'predictions'), 'wb') as f:
                     pickle.dump(preds, f)
             output_eval_file = os.path.join(eval_output_dir, "eval_results.txt")
-
+        
         with open(output_eval_file, "w") as writer:
             logger.info("***** Eval results {} *****".format(prefix))
             for key in sorted(result.keys()):
@@ -357,19 +350,19 @@ def evaluate(args, model, tokenizer, prefix=""):
 
 def get_matchings(span, train_examples, ps):
     mapping = {i: el for i, el in enumerate(['Appeal_to_Authority', 'Doubt', 'Repetition',
-                                             'Appeal_to_fear-prejudice', 'Slogans', 'Black-and-White_Fallacy',
-                                             'Loaded_Language', 'Flag-Waving', 'Name_Calling,Labeling',
-                                             'Whataboutism,Straw_Men,Red_Herring', 'Causal_Oversimplification',
-                                             'Exaggeration,Minimisation', 'Bandwagon,Reductio_ad_hitlerum',
-                                             'Thought-terminating_Cliches'])}
-    inverse_mapping = {b: a for (a, b) in mapping.items()}
-
+       'Appeal_to_fear-prejudice', 'Slogans', 'Black-and-White_Fallacy',
+       'Loaded_Language', 'Flag-Waving', 'Name_Calling,Labeling',
+       'Whataboutism,Straw_Men,Red_Herring', 'Causal_Oversimplification',
+       'Exaggeration,Minimisation', 'Bandwagon,Reductio_ad_hitlerum',
+       'Thought-terminating_Cliches'])}
+    inverse_mapping = {b:a for (a, b) in mapping.items()}
+    
     matchings = np.zeros(len(mapping))
     clear_span = " ".join([ps.stem(word) for word in word_tokenize(span.lower())])
     if len(clear_span) > 0:
         for class_label in train_examples.get(clear_span, set()):
             matchings[inverse_mapping[class_label]] += 1
-    if np.sum(matchings) != 0:
+    if np.sum(matchings) != 0:        
         matchings /= np.sum(matchings)
     return matchings
 
@@ -407,13 +400,12 @@ def load_and_cache_examples(args, task, tokenizer, evaluate=False, mode=None):
                                                 label_list=label_list,
                                                 max_length=args.max_seq_length,
                                                 output_mode=output_mode,
-                                                pad_on_left=bool(args.model_type in ['xlnet']),
-                                                # pad on the left for xlnet
+                                                pad_on_left=bool(args.model_type in ['xlnet']),                 # pad on the left for xlnet
                                                 pad_token=tokenizer.convert_tokens_to_ids([tokenizer.pad_token])[0],
                                                 pad_token_segment_id=4 if args.model_type in ['xlnet'] else 0,
-                                                )
+        )
         if args.use_matchings:
-            assert len(features) == len(examples)
+            assert len(features) == len(examples) 
             if args.do_eval or args.do_train:
                 with open(os.path.join(args.data_dir, 'train_instances_train'), 'rb') as f:
                     train_examples = pickle.load(f)
@@ -423,7 +415,7 @@ def load_and_cache_examples(args, task, tokenizer, evaluate=False, mode=None):
             ps = PorterStemmer()
             for i in range(len(features)):
                 features[i].matchings = get_matchings(examples[i].text_a, train_examples, ps)
-
+        
         if args.local_rank in [-1, 0] and False:
             logger.info("Saving features into cached file %s", cached_features_file)
             torch.save(features, cached_features_file)
@@ -439,7 +431,7 @@ def load_and_cache_examples(args, task, tokenizer, evaluate=False, mode=None):
         all_labels = torch.tensor([f.label for f in features], dtype=torch.long)
     elif output_mode == "regression":
         all_labels = torch.tensor([f.label for f in features], dtype=torch.float)
-
+    
     if args.use_matchings:
         all_matchings = torch.tensor([f.matchings for f in features], dtype=torch.float)
         dataset = TensorDataset(all_input_ids, all_attention_mask, all_token_type_ids, all_labels, all_matchings)
@@ -449,11 +441,8 @@ def load_and_cache_examples(args, task, tokenizer, evaluate=False, mode=None):
 
 
 def transformers_clf(args):
-    if os.path.exists(args.output_dir) and os.listdir(
-            args.output_dir) and args.do_train and not args.overwrite_output_dir:
-        raise ValueError(
-            "Output directory ({}) already exists and is not empty. Use --overwrite_output_dir to overcome.".format(
-                args.output_dir))
+    if os.path.exists(args.output_dir) and os.listdir(args.output_dir) and args.do_train and not args.overwrite_output_dir:
+        raise ValueError("Output directory ({}) already exists and is not empty. Use --overwrite_output_dir to overcome.".format(args.output_dir))
 
     # Setup distant debugging if needed
     if args.server_ip and args.server_port:
@@ -475,11 +464,11 @@ def transformers_clf(args):
     args.device = device
 
     # Setup logging
-    logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
-                        datefmt='%m/%d/%Y %H:%M:%S',
-                        level=logging.INFO if args.local_rank in [-1, 0] else logging.WARN)
+    logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
+                        datefmt = '%m/%d/%Y %H:%M:%S',
+                        level = logging.INFO if args.local_rank in [-1, 0] else logging.WARN)
     logger.warning("Process rank: %s, device: %s, n_gpu: %s, distributed training: %s, 16-bits training: %s",
-                   args.local_rank, device, args.n_gpu, bool(args.local_rank != -1), args.fp16)
+                    args.local_rank, device, args.n_gpu, bool(args.local_rank != -1), args.fp16)
 
     # Set seed
     set_seed(args)
@@ -521,11 +510,13 @@ def transformers_clf(args):
 
     logger.info("Training/evaluation parameters %s", args)
 
+
     # Training
     if args.do_train:
         train_dataset = load_and_cache_examples(args, args.task_name, tokenizer, evaluate=False, mode='train')
         global_step, tr_loss = train(args, train_dataset, model, tokenizer)
         logger.info(" global_step = %s, average loss = %s", global_step, tr_loss)
+
 
     # Saving best-practices: if you use defaults names for the model, you can reload it using from_pretrained()
     if args.do_train and (args.local_rank == -1 or torch.distributed.get_rank() == 0):
@@ -536,8 +527,7 @@ def transformers_clf(args):
         logger.info("Saving model checkpoint to %s", args.output_dir)
         # Save a trained model, configuration and tokenizer using `save_pretrained()`.
         # They can then be reloaded using `from_pretrained()`
-        model_to_save = model.module if hasattr(model,
-                                                'module') else model  # Take care of distributed/parallel training
+        model_to_save = model.module if hasattr(model, 'module') else model  # Take care of distributed/parallel training
         model_to_save.save_pretrained(args.output_dir)
         tokenizer.save_pretrained(args.output_dir)
 
@@ -549,20 +539,20 @@ def transformers_clf(args):
         tokenizer = tokenizer_class.from_pretrained(args.output_dir)
         model.to(args.device)
 
+
     # Evaluation
     results = {}
     if args.do_eval or args.do_predict and args.local_rank in [-1, 0]:
         tokenizer = tokenizer_class.from_pretrained(args.output_dir, do_lower_case=args.do_lower_case)
         checkpoints = [args.output_dir]
         if args.eval_all_checkpoints:
-            checkpoints = list(
-                os.path.dirname(c) for c in sorted(glob.glob(args.output_dir + '/**/' + WEIGHTS_NAME, recursive=True)))
+            checkpoints = list(os.path.dirname(c) for c in sorted(glob.glob(args.output_dir + '/**/' + WEIGHTS_NAME, recursive=True)))
             logging.getLogger("transformers.modeling_utils").setLevel(logging.WARN)  # Reduce logging
         logger.info("Evaluate the following checkpoints: %s", checkpoints)
         for checkpoint in checkpoints:
             global_step = checkpoint.split('-')[-1] if len(checkpoints) > 1 else ""
             prefix = checkpoint.split('/')[-1] if checkpoint.find('checkpoint') != -1 else ""
-
+            
             model = model_class.from_pretrained(checkpoint)
             model.to(args.device)
             result = evaluate(args, model, tokenizer, prefix=prefix)

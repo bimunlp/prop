@@ -9,7 +9,7 @@ test_data_folder: dataset/test-articles
 train_labels_path: datasets/train-task-flc-tc.labels
 dev_labels_path: datasets/dev-task-flc-tc.labels
 #test_template_labels_path: results/mydev-task-TC.labelss
-test_template_labels_path: datasets/dev-task-TC-template.out
+test_template_labels_path: datasets/dev-task-tc-template.out
 #test_template_labels_path: datasets/test/test-task-TC-template.out
 data_dir: cached_datasets/TC/
 train_file: train.tsv
@@ -17,10 +17,6 @@ dev_file: dev.tsv
 #test_file: dev.tsv
 #test_file: eval_tc_new.tsv
 test_file: test.tsv
-split_by_ids: True
-dev_size: 0.18
-balance: False
-shuffle: True
 overwrite_cache: False
 
 

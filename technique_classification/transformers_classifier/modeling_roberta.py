@@ -39,12 +39,10 @@ ROBERTA_PRETRAINED_MODEL_ARCHIVE_MAP = {
     'roberta-large-openai-detector': "https://s3.amazonaws.com/models.huggingface.co/bert/roberta-large-openai-detector-pytorch_model.bin",
 }
 
-
 class RobertaEmbeddings(BertEmbeddings):
     """
     Same as BertEmbeddings with a tiny tweak for positional embeddings indexing.
     """
-
     def __init__(self, config):
         super(RobertaEmbeddings, self).__init__(config)
         self.padding_idx = 1
@@ -64,8 +62,7 @@ class RobertaEmbeddings(BertEmbeddings):
         if position_ids is None:
             # Position numbers begin at padding_idx+1. Padding symbols are ignored.
             # cf. fairseq's `utils.make_positions`
-            position_ids = torch.arange(self.padding_idx + 1, seq_length + self.padding_idx + 1, dtype=torch.long,
-                                        device=device)
+            position_ids = torch.arange(self.padding_idx+1, seq_length+self.padding_idx+1, dtype=torch.long, device=device)
             position_ids = position_ids.unsqueeze(0).expand(input_shape)
         return super(RobertaEmbeddings, self).forward(input_ids,
                                                       token_type_ids=token_type_ids,
@@ -77,10 +74,10 @@ ROBERTA_START_DOCSTRING = r"""    The RoBERTa model was proposed in
     `RoBERTa: A Robustly Optimized BERT Pretraining Approach`_
     by Yinhan Liu, Myle Ott, Naman Goyal, Jingfei Du, Mandar Joshi, Danqi Chen, Omer Levy, Mike Lewis, Luke Zettlemoyer,
     Veselin Stoyanov. It is based on Google's BERT model released in 2018.
-
+    
     It builds on BERT and modifies key hyperparameters, removing the next-sentence pretraining
     objective and training with much larger mini-batches and learning rates.
-
+    
     This implementation is the same as BertModel with a tiny embeddings tweak as well as a setup for Roberta pretrained 
     models.
 
@@ -145,10 +142,8 @@ ROBERTA_INPUTS_DOCSTRING = r"""
             than the model's internal embedding lookup matrix.
 """
 
-
-@add_start_docstrings(
-    "The bare RoBERTa Model transformer outputting raw hidden-states without any specific head on top.",
-    ROBERTA_START_DOCSTRING, ROBERTA_INPUTS_DOCSTRING)
+@add_start_docstrings("The bare RoBERTa Model transformer outputting raw hidden-states without any specific head on top.",
+                      ROBERTA_START_DOCSTRING, ROBERTA_INPUTS_DOCSTRING)
 class RobertaModel(BertModel):
     r"""
     Outputs: `Tuple` comprising various elements depending on the configuration (config) and inputs:
@@ -194,9 +189,8 @@ class RobertaModel(BertModel):
     def set_input_embeddings(self, value):
         self.embeddings.word_embeddings = value
 
-
 @add_start_docstrings("""RoBERTa Model with a `language modeling` head on top. """,
-                      ROBERTA_START_DOCSTRING, ROBERTA_INPUTS_DOCSTRING)
+    ROBERTA_START_DOCSTRING, ROBERTA_INPUTS_DOCSTRING)
 class RobertaForMaskedLM(BertPreTrainedModel):
     r"""
         **masked_lm_labels**: (`optional`) ``torch.LongTensor`` of shape ``(batch_size, sequence_length)``:
@@ -242,8 +236,7 @@ class RobertaForMaskedLM(BertPreTrainedModel):
     def get_output_embeddings(self):
         return self.lm_head.decoder
 
-    def forward(self, input_ids=None, attention_mask=None, token_type_ids=None, position_ids=None, head_mask=None,
-                inputs_embeds=None,
+    def forward(self, input_ids=None, attention_mask=None, token_type_ids=None, position_ids=None, head_mask=None, inputs_embeds=None,
                 masked_lm_labels=None):
         outputs = self.roberta(input_ids,
                                attention_mask=attention_mask,
@@ -288,7 +281,7 @@ class RobertaLMHead(nn.Module):
 
 @add_start_docstrings("""RoBERTa Model transformer with a sequence classification/regression head on top (a linear layer 
     on top of the pooled output) e.g. for GLUE tasks. """,
-                      ROBERTA_START_DOCSTRING, ROBERTA_INPUTS_DOCSTRING)
+    ROBERTA_START_DOCSTRING, ROBERTA_INPUTS_DOCSTRING)
 class RobertaForSequenceClassification(BertPreTrainedModel):
     r"""
         **labels**: (`optional`) ``torch.LongTensor`` of shape ``(batch_size,)``:
@@ -340,9 +333,8 @@ class RobertaForSequenceClassification(BertPreTrainedModel):
             self.classifier = RobertaClassificationHeadMatchings(config)
         else:
             self.classifier = RobertaClassificationHead(config)
-
-    def forward(self, input_ids=None, attention_mask=None, token_type_ids=None, position_ids=None, head_mask=None,
-                inputs_embeds=None, labels=None, lengths=None, matchings=None, embeddings_mask=None):
+    
+    def forward(self, input_ids=None, attention_mask=None, token_type_ids=None, position_ids=None, head_mask=None, inputs_embeds=None, labels=None, lengths=None, matchings=None, embeddings_mask=None):
         outputs = self.roberta(input_ids,
                                attention_mask=attention_mask,
                                token_type_ids=token_type_ids,
@@ -350,11 +342,10 @@ class RobertaForSequenceClassification(BertPreTrainedModel):
                                head_mask=head_mask,
                                inputs_embeds=inputs_embeds)
         sequence_output = outputs[0]
-
-        logits = self.classifier(sequence_output, sent_a_length=lengths, attention_mask=embeddings_mask,
-                                 matchings=matchings)
-
-        # logits = self.classifier(sequence_output)
+        
+        logits = self.classifier(sequence_output, sent_a_length=lengths, attention_mask=embeddings_mask, matchings=matchings)
+        
+        #logits = self.classifier(sequence_output)
 
         outputs = (logits,) + outputs[2:]
         if labels is not None:
@@ -372,7 +363,7 @@ class RobertaForSequenceClassification(BertPreTrainedModel):
 
 @add_start_docstrings("""Roberta Model with a multiple choice classification head on top (a linear layer on top of
     the pooled output and a softmax) e.g. for RocStories/SWAG tasks. """,
-                      ROBERTA_START_DOCSTRING, ROBERTA_INPUTS_DOCSTRING)
+    ROBERTA_START_DOCSTRING, ROBERTA_INPUTS_DOCSTRING)
 class RobertaForMultipleChoice(BertPreTrainedModel):
     r"""
     Inputs:
@@ -465,7 +456,7 @@ class RobertaForMultipleChoice(BertPreTrainedModel):
         flat_token_type_ids = token_type_ids.view(-1, token_type_ids.size(-1)) if token_type_ids is not None else None
         flat_attention_mask = attention_mask.view(-1, attention_mask.size(-1)) if attention_mask is not None else None
         outputs = self.roberta(flat_input_ids, position_ids=flat_position_ids, token_type_ids=flat_token_type_ids,
-                               attention_mask=flat_attention_mask, head_mask=head_mask)
+                            attention_mask=flat_attention_mask, head_mask=head_mask)
         pooled_output = outputs[1]
 
         pooled_output = self.dropout(pooled_output)
@@ -484,7 +475,7 @@ class RobertaForMultipleChoice(BertPreTrainedModel):
 
 @add_start_docstrings("""Roberta Model with a token classification head on top (a linear layer on top of
     the hidden-states output) e.g. for Named-Entity-Recognition (NER) tasks. """,
-                      ROBERTA_START_DOCSTRING, ROBERTA_INPUTS_DOCSTRING)
+    ROBERTA_START_DOCSTRING, ROBERTA_INPUTS_DOCSTRING)
 class RobertaForTokenClassification(BertPreTrainedModel):
     r"""
         **labels**: (`optional`) ``torch.LongTensor`` of shape ``(batch_size, sequence_length)``:
@@ -545,7 +536,7 @@ class RobertaForTokenClassification(BertPreTrainedModel):
 
         outputs = (logits,) + outputs[2:]  # add hidden states and attention if they are here
         if labels is not None:
-            # loss_fct = CrossEntropyLoss(ignore_index=-100)
+            #loss_fct = CrossEntropyLoss(ignore_index=-100)
             loss_fct = CrossEntropyLoss()
             # Only keep active parts of the loss
             if attention_mask is not None:
@@ -577,8 +568,8 @@ class RobertaClassificationHead(nn.Module):
         x = self.dropout(x)
         x = self.out_proj(x)
         return x
-
-
+    
+    
 class RobertaClassificationHeadLength(nn.Module):
     """Head for sentence-level classification tasks."""
 
@@ -597,7 +588,8 @@ class RobertaClassificationHeadLength(nn.Module):
         x = self.dropout(x)
         x = self.out_proj(x)
         return x
-
+    
+    
 
 class RobertaClassificationHeadMatchings(nn.Module):
     """Head for sentence-level classification tasks."""
@@ -618,6 +610,7 @@ class RobertaClassificationHeadMatchings(nn.Module):
         return x
 
 
+    
 class RobertaClassificationHeadJoinedLenght(nn.Module):
     """Head for sentence-level classification tasks."""
 
@@ -627,11 +620,11 @@ class RobertaClassificationHeadJoinedLenght(nn.Module):
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.out_proj = nn.Linear(config.hidden_size, config.num_labels)
 
-    def forward(self, features, sent_a_length=None, attention_mask=None, **kwargs):
+    def forward(self, features,  sent_a_length=None, attention_mask=None, **kwargs):
         x = features[:, 0, :]  # take <s> token (equiv. to [CLS])
         x = torch.cat((x, sent_a_length), dim=1)
-        # mask = attention_mask.reshape(features.shape[0], features.shape[1], 1).type(torch.FloatTensor).cuda()
-        # embs = (features * mask)[:, 1:, :].sum(dim=1) / sent_a_length
+        #mask = attention_mask.reshape(features.shape[0], features.shape[1], 1).type(torch.FloatTensor).cuda()
+        #embs = (features * mask)[:, 1:, :].sum(dim=1) / sent_a_length
         embs = features[:, 1:, :].mean(dim=1)
         x = torch.cat((x, embs), dim=1)
         x = self.dropout(x)
@@ -651,11 +644,11 @@ class RobertaClassificationHeadJoined(nn.Module):
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.out_proj = nn.Linear(config.hidden_size, config.num_labels)
 
-    def forward(self, features, sent_a_length=None, attention_mask=None, **kwargs):
+    def forward(self, features,  sent_a_length=None, attention_mask=None, **kwargs):
         x = features[:, 0, :]  # take <s> token (equiv. to [CLS])
         mask = attention_mask.reshape(features.shape[0], features.shape[1], 1).type(torch.FloatTensor).cuda()
         embs = (features * mask)[:, 1:, :].sum(dim=1) / mask.sum(dim=1)
-        # embs, _ = (features * mask)[:, 1:, :].max(dim=1)
+        #embs, _ = (features * mask)[:, 1:, :].max(dim=1)
         x = torch.cat((x, embs), dim=1)
         x = self.dropout(x)
         x = self.dense(x)
@@ -664,7 +657,8 @@ class RobertaClassificationHeadJoined(nn.Module):
         x = self.out_proj(x)
         return x
 
-
+    
+    
 class RobertaClassificationHeadJoinedAtt(nn.Module):
     """Head for sentence-level classification tasks."""
 
@@ -676,18 +670,18 @@ class RobertaClassificationHeadJoinedAtt(nn.Module):
             nn.Tanh(),
             nn.Linear(config.hidden_size, 1)
         )
-
+        
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.out_proj = nn.Linear(config.hidden_size, config.num_labels)
 
-    def forward(self, features, sent_a_length, attention_mask, **kwargs):
+    def forward(self, features,  sent_a_length, attention_mask, **kwargs):
         x = features[:, 0, :]  # take <s> token (equiv. to [CLS])
         x = torch.cat((x, sent_a_length), dim=1)
         mask = attention_mask.reshape(features.shape[0], features.shape[1], 1).type(torch.FloatTensor).cuda()
         att = self.att_weights(features) * mask
         embs = (features * att)[:, 1:, :].sum(dim=1) / sent_a_length
         x = torch.cat((x, embs), dim=1)
-        # x = torch.cat((x, features[:, 1:, :].mean(dim=1)), dim=1)
+        #x = torch.cat((x, features[:, 1:, :].mean(dim=1)), dim=1)
         x = self.dropout(x)
         x = self.dense(x)
         x = torch.tanh(x)
@@ -695,7 +689,7 @@ class RobertaClassificationHeadJoinedAtt(nn.Module):
         x = self.out_proj(x)
         return x
 
-
+    
 class RobertaClassificationHeadVoting(nn.Module):
     """Head for sentence-level classification tasks."""
 
@@ -707,7 +701,7 @@ class RobertaClassificationHeadVoting(nn.Module):
             nn.Tanh(),
             nn.Linear(config.hidden_size, 1)
         )
-
+        
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.out_proj = nn.Linear(config.hidden_size, config.num_labels)
 
